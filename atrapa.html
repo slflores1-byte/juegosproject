@@ -1,0 +1,297 @@
+<!doctype html>
+<html lang="es">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Atrapa el Mapache · JuegosYa</title>
+  <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@400;500;700&display=swap">
+  <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css">
+  <link rel="stylesheet" href="css/styles.css">
+</head>
+<body>
+  <nav class="navbar navbar-expand-md bg-white sticky-top px-3">
+    <div class="container-fluid">
+      <a class="navbar-brand fw-bold d-flex align-items-center" href="index.html">
+        <svg class="logo-icon me-2" width="32" height="32" viewBox="0 0 32 32" aria-hidden="true"><rect width="32" height="32" rx="10"/></svg>JuegosYa
+      </a>
+      <button class="navbar-toggler border-0" type="button" data-bs-toggle="collapse" data-bs-target="#nav" aria-controls="nav" aria-expanded="false" aria-label="Abrir menú">
+        <span class="navbar-toggler-icon"></span>
+      </button>
+      <div class="collapse navbar-collapse justify-content-end" id="nav">
+        <ul class="navbar-nav">
+          <li class="nav-item"><a class="nav-link" href="index.html">Inicio</a></li>
+          <li class="nav-item"><a class="nav-link" href="memoria.html">Memoria</a></li>
+          <li class="nav-item"><a class="nav-link active fw-bold text-decoration-underline" href="atrapa.html" aria-current="page">Atrapa</a></li>
+          <li class="nav-item"><a class="nav-link" href="index.html#registro">Registro</a></li>
+        </ul>
+      </div>
+    </div>
+  </nav>
+
+  <main class="container-fluid px-3 px-md-5 py-4">
+    <div class="row g-4 align-items-start">
+      <section class="col-12 col-md-8">
+        <h1 class="fw-bold mb-1">Atrapa el Mapache</h1>
+        <p>Golpea a los mapaches con el martillo antes de que se escondan. El mapache dorado vale 3 veces más. Gana monedas y mejora tu martillo.</p>
+        <div class="d-flex flex-wrap gap-2 my-3">
+          <div class="bg-white rounded-4 px-3 py-2">Puntos <b class="fs-5 ms-1" id="score">0</b></div>
+          <div class="bg-white rounded-4 px-3 py-2">Tiempo <b class="fs-5 ms-1" id="time">30</b></div>
+          <div class="chip-coin rounded-4 px-3 py-2">🪙 Monedas <b class="fs-5 ms-1" id="coins">0</b></div>
+        </div>
+
+        <div class="arena-box ratio ratio-4x3 border border-3 rounded-4 overflow-hidden">
+          <div class="arena user-select-none" id="arena">
+            <div class="field" id="field"></div>
+            <div class="overlay d-flex flex-column align-items-center justify-content-center gap-3 p-4 text-center" id="startPanel">
+              <div class="emoji" style="font-size:3rem" aria-hidden="true">🦝🔨</div>
+              <h2 class="fw-bold">¿Listo para jugar?</h2>
+              <p class="mb-0">Tienes 30 segundos. Cada mapache que golpees suma puntos y monedas.</p>
+              <button class="btn btn-start btn-lg rounded-pill fw-bold px-4" id="startBtn">Empezar</button>
+            </div>
+            <div class="hammer" id="hammer" data-nivel="1" aria-hidden="true">🔨</div>
+          </div>
+        </div>
+
+        <div class="shop d-flex flex-wrap align-items-center gap-3 p-3 mt-3">
+          <div class="shop-hammer" id="shopHammer" data-nivel="1">🔨</div>
+          <div class="flex-grow-1">
+            <div class="fw-bold" id="hamName">Martillo de madera</div>
+            <div class="small" id="hamInfo">1 punto por golpe</div>
+          </div>
+          <button class="btn btn-violet rounded-pill fw-bold px-4" id="upgradeBtn" type="button">Mejorar</button>
+        </div>
+      </section>
+
+      <aside class="col-12 col-md-4" id="invite" hidden aria-live="polite">
+        <div class="invite rounded-4 p-4 text-white">
+          <h2 class="fw-bold mb-3">¡Se acabó el tiempo!</h2>
+          <div class="result d-inline-block rounded-pill fw-bold px-3 py-2 mb-3" id="result"></div>
+          <p>¿Quieres registrarte para recibir novedades? Es opcional.</p>
+          <div class="d-grid gap-3">
+            <a class="btn btn-violet btn-lg rounded-pill fw-bold" id="registerLink" href="index.html#registro">Registrarme</a>
+            <button class="btn btn-outline-light btn-lg rounded-pill fw-bold" id="skipBtn" type="button">Seguir navegando</button>
+          </div>
+        </div>
+      </aside>
+    </div>
+  </main>
+
+  <div class="modal fade" id="modalRegistro" tabindex="-1" aria-labelledby="modalRegistroTitulo" aria-hidden="true">
+    <div class="modal-dialog modal-dialog-centered">
+      <div class="modal-content rounded-4 text-center p-3">
+        <div class="modal-body">
+          <h2 class="h4 fw-bold" id="modalRegistroTitulo">¡Regístrate!</h2>
+          <p>Regístrate para recibir novedades. Si prefieres, puedes omitir y seguir jugando.</p>
+          <div class="d-grid gap-2">
+            <a class="btn btn-violet rounded-pill fw-bold" id="modalRegisterLink" href="index.html#registro">Registrarme</a>
+            <button type="button" class="btn btn-indigo rounded-pill fw-bold" id="omitBtn">Omitir</button>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"></script>
+  <script>
+(() => {
+  const DURACION = 30, INTERVALO_INICIAL = 800, INTERVALO_MINIMO = 450;
+  const VIDA_INICIAL = 1300, VIDA_MINIMA = 750, HOYOS = 9;
+  const BONUS = { prob: 0.12, mult: 3 };
+  const MARTILLOS = [
+    { nombre: 'Martillo de madera',   puntos: 1, costo: 0,   k: 1 },
+    { nombre: 'Martillo de piedra',   puntos: 2, costo: 20,  k: 1.1 },
+    { nombre: 'Martillo de hierro',   puntos: 3, costo: 60,  k: 1.2 },
+    { nombre: 'Martillo de oro',      puntos: 5, costo: 140, k: 1.3 },
+    { nombre: 'Martillo de diamante', puntos: 8, costo: 300, k: 1.4 }
+  ];
+
+  const $ = (id) => document.getElementById(id);
+  const arena = $('arena'), field = $('field'), startPanel = $('startPanel'), startBtn = $('startBtn');
+  const scoreEl = $('score'), timeEl = $('time'), coinsEl = $('coins');
+  const hammer = $('hammer'), shopHammer = $('shopHammer');
+  const hamName = $('hamName'), hamInfo = $('hamInfo'), upgradeBtn = $('upgradeBtn');
+  const invite = $('invite'), resultEl = $('result');
+  const registerLink = $('registerLink'), modalRegisterLink = $('modalRegisterLink');
+  const skipBtn = $('skipBtn'), omitBtn = $('omitBtn');
+  const modalRegistro = new bootstrap.Modal($('modalRegistro'));
+
+  let puntos = 0, restante = DURACION, jugando = false, yaJugo = false;
+  let relojId = null, spawnId = null;
+  let monedas = 0, nivel = 0;
+  try {
+    monedas = parseInt(localStorage.getItem('mapache_monedas')) || 0;
+    nivel = Math.min(parseInt(localStorage.getItem('mapache_nivel')) || 0, MARTILLOS.length - 1);
+  } catch (e) {}
+
+  const progreso = () => 1 - restante / DURACION;
+
+  // Hoyos con mapaches
+  const hoyos = [];
+  for (let i = 0; i < HOYOS; i++) {
+    const hole = document.createElement('div');
+    hole.className = 'hole';
+    const coon = document.createElement('button');
+    coon.type = 'button';
+    coon.className = 'coon';
+    const img = document.createElement('img');
+    img.src = 'img/mapache.png';
+    img.alt = '';
+    img.draggable = false;
+    coon.appendChild(img);
+    coon.tabIndex = -1;
+    coon.setAttribute('aria-label', 'Mapache');
+    hole.appendChild(coon);
+    field.appendChild(hole);
+    const h = { hole, coon, ocupado: false, quitar: null, bonus: false };
+    coon.addEventListener('pointerdown', (e) => { e.preventDefault(); golpear(h); });
+    hoyos.push(h);
+  }
+
+  // Martillo y tienda
+  function guardar() {
+    try { localStorage.setItem('mapache_monedas', monedas); localStorage.setItem('mapache_nivel', nivel); } catch (e) {}
+  }
+
+  function pintarTienda() {
+    const m = MARTILLOS[nivel], sig = MARTILLOS[nivel + 1];
+    coinsEl.textContent = monedas;
+    hammer.dataset.nivel = shopHammer.dataset.nivel = nivel + 1;
+    hammer.style.setProperty('--k', m.k);
+    hamName.textContent = m.nombre + ' (nivel ' + (nivel + 1) + ')';
+    hamInfo.textContent = m.puntos + (m.puntos === 1 ? ' punto' : ' puntos') + ' por golpe';
+    if (sig) {
+      upgradeBtn.textContent = 'Mejorar · ' + sig.costo + ' 🪙';
+      upgradeBtn.disabled = monedas < sig.costo;
+    } else {
+      upgradeBtn.textContent = 'Nivel máximo';
+      upgradeBtn.disabled = true;
+    }
+  }
+
+  upgradeBtn.addEventListener('click', () => {
+    const sig = MARTILLOS[nivel + 1];
+    if (!sig || monedas < sig.costo) return;
+    monedas -= sig.costo;
+    nivel++;
+    guardar();
+    pintarTienda();
+  });
+
+  // El martillo sigue al puntero y golpea al tocar
+  function moverMartillo(e) {
+    const r = arena.getBoundingClientRect();
+    hammer.style.left = (e.clientX - r.left) + 'px';
+    hammer.style.top = (e.clientY - r.top) + 'px';
+    hammer.classList.add('visible');
+  }
+  arena.addEventListener('pointermove', moverMartillo);
+  arena.addEventListener('pointerleave', () => hammer.classList.remove('visible'));
+  arena.addEventListener('pointerdown', (e) => {
+    if (!jugando) return;
+    moverMartillo(e);
+    hammer.classList.add('swing');
+    setTimeout(() => hammer.classList.remove('swing'), 110);
+  });
+
+  // Juego
+  function iniciar() {
+    puntos = 0;
+    restante = DURACION;
+    jugando = true;
+    scoreEl.textContent = 0;
+    timeEl.textContent = restante;
+    invite.hidden = true;
+    startPanel.classList.add('d-none');
+    arena.classList.add('playing');
+    hoyos.forEach(limpiar);
+    pintarTienda();
+    relojId = setInterval(() => {
+      restante--;
+      timeEl.textContent = restante;
+      if (restante <= 0) terminar();
+    }, 1000);
+    programarAparicion();
+  }
+
+  function programarAparicion() {
+    if (!jugando) return;
+    const espera = INTERVALO_INICIAL - (INTERVALO_INICIAL - INTERVALO_MINIMO) * progreso();
+    spawnId = setTimeout(() => { crearMapache(); programarAparicion(); }, espera);
+  }
+
+  function limpiar(h) {
+    clearTimeout(h.quitar);
+    h.coon.className = 'coon';
+    h.ocupado = false;
+  }
+
+  function crearMapache() {
+    const libres = hoyos.filter(h => !h.ocupado);
+    if (!libres.length) return;
+    const h = libres[Math.floor(Math.random() * libres.length)];
+    h.ocupado = true;
+    h.bonus = Math.random() < BONUS.prob;
+    h.coon.className = 'coon up' + (h.bonus ? ' gold' : '');
+    h.coon.setAttribute('aria-label', h.bonus ? 'Mapache dorado, puntos x3' : 'Mapache');
+    const vida = (VIDA_INICIAL - (VIDA_INICIAL - VIDA_MINIMA) * progreso()) * (h.bonus ? 0.75 : 1);
+    h.quitar = setTimeout(() => { h.coon.className = 'coon'; setTimeout(() => { h.ocupado = false; }, 160); }, vida);
+  }
+
+  function golpear(h) {
+    if (!jugando || !h.ocupado || h.coon.classList.contains('squash')) return;
+    clearTimeout(h.quitar);
+    const m = MARTILLOS[nivel];
+    const ganado = m.puntos * (h.bonus ? BONUS.mult : 1);
+    puntos += ganado;
+    monedas += ganado;
+    scoreEl.textContent = puntos;
+    guardar();
+    pintarTienda();
+
+    h.coon.classList.add('squash');
+    arena.classList.add('shake');
+    setTimeout(() => arena.classList.remove('shake'), 180);
+
+    const mas = document.createElement('span');
+    mas.className = 'plus position-absolute fw-bold fs-4 pe-none';
+    mas.textContent = '+' + ganado;
+    mas.style.left = (h.hole.offsetLeft + h.hole.offsetWidth * 0.4) + 'px';
+    mas.style.top = (h.hole.offsetTop + h.hole.offsetHeight * 0.1) + 'px';
+    arena.appendChild(mas);
+    setTimeout(() => mas.remove(), 600);
+
+    setTimeout(() => { if (h.ocupado) limpiar(h); }, 420);
+  }
+
+  function terminar() {
+    jugando = false;
+    yaJugo = true;
+    clearInterval(relojId);
+    clearTimeout(spawnId);
+    hoyos.forEach(limpiar);
+    arena.classList.remove('playing');
+    hammer.classList.remove('visible');
+    timeEl.textContent = 0;
+
+    resultEl.textContent = puntos + (puntos === 1 ? ' punto' : ' puntos');
+    const destino = `index.html?juego=atrapa&puntos=${puntos}#registro`;
+    registerLink.href = destino;
+    modalRegisterLink.href = destino;
+    invite.hidden = false;
+
+    startPanel.querySelector('h2').textContent = 'Partida terminada';
+    startPanel.querySelector('p').textContent = 'Hiciste ' + puntos + ' puntos. Mejora tu martillo y vuelve a intentarlo.';
+    startBtn.textContent = 'Volver a jugar';
+    startPanel.classList.remove('d-none');
+  }
+
+  // Tras una partida, "Volver a jugar" primero invita a registrarse
+  startBtn.addEventListener('click', () => { yaJugo ? modalRegistro.show() : iniciar(); });
+  omitBtn.addEventListener('click', () => { modalRegistro.hide(); iniciar(); });
+  skipBtn.addEventListener('click', () => { window.location.href = 'index.html#juegos'; });
+
+  pintarTienda();
+})();
+  </script>
+</body>
+</html>

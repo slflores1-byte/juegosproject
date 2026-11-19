@@ -57,14 +57,161 @@ body,.mem-body{background-color:var(--bg);color:var(--ink);font-family:'Space Gr
 .msg--ok{--bs-alert-color:var(--ink);--bs-alert-bg:var(--peri);--bs-alert-border-color:var(--peri)}
 .msg--err{--bs-alert-color:#7A1710;--bs-alert-bg:#FBE3E1;--bs-alert-border-color:#FBE3E1}
 
-/* Atrapa */
-.arena-box{border-color:var(--ink)!important}
-.arena{background-color:var(--soft)}
-.animal{background-color:var(--c,var(--violet))}
-.plus{color:var(--indigo)}
-.overlay{background-color:rgba(230,230,250,.94)}
+/* =====================================================
+   Atrapa el Mapache
+   ===================================================== */
+
+/* Paleta propia del juego */
+.arena-box{
+  --sky:var(--peri);
+  --grass:#7FDC9A;
+  --dirt:#7A4A2A;
+  --hole-in:#2A1A12;
+  --hole-edge:#4A2D1C;
+  --mint:#5DF0B8;
+  --mint-dark:#1FA97A;
+  --gold:#F0B429;
+  --gold-light:#FFF3A0;
+  --gold-glow:#FFD54A;
+}
+
+/* Marco (el borde de color lo fuerza .border de Bootstrap, por eso !important) */
+.arena-box{border-color:var(--ink)!important;box-shadow:0 10px 0 rgba(30,27,75,.2)}
+@media (max-width:575.98px){
+  .arena-box.ratio{--bs-aspect-ratio:105%}
+}
+
+/* Escenario: cielo arriba, pasto abajo, dos nubes */
+.arena{
+  position:absolute;inset:0;           /* llena el .ratio de Bootstrap */
+  container-type:size;overflow:hidden;
+  background:
+    radial-gradient(circle at 15% 12%,rgba(255,255,255,.55) 0 6%,transparent 7%),
+    radial-gradient(circle at 85% 18%,rgba(255,255,255,.4) 0 4%,transparent 5%),
+    linear-gradient(var(--sky) 0 30%,var(--grass) 30% 100%);
+}
+.arena.playing,
+.arena.playing .coon{cursor:none}
+.arena.shake{animation:sacudir .18s}
+@keyframes sacudir{
+  25%{transform:translate(-3px,2px)}
+  60%{transform:translate(3px,-2px)}
+}
+
+/* Cuadrícula 3x3 de hoyos */
+.field{
+  position:absolute;inset:0;z-index:1;
+  display:grid;grid-template-columns:repeat(3,1fr);grid-template-rows:repeat(3,1fr);
+  gap:2% 3%;padding:5% 6% 3%;
+}
+.hole{position:relative;container-type:size;overflow:hidden}
+.hole::before{                          /* agujero oscuro */
+  content:"";position:absolute;left:4%;right:4%;bottom:2%;height:34%;z-index:0;
+  background:radial-gradient(ellipse at 50% 40%,var(--hole-in) 0 55%,var(--hole-edge) 70%);
+  border-radius:50%;
+}
+.hole::after{                           /* borde de tierra que tapa al mapache */
+  content:"";position:absolute;left:0;right:0;bottom:0;height:22%;z-index:2;pointer-events:none;
+  background:radial-gradient(ellipse at 50% 100%,var(--dirt) 0 60%,transparent 62%);
+}
+
+/* Mapache */
+.coon{
+  position:absolute;left:0;right:0;bottom:6%;margin:auto;z-index:1;
+  height:78%;aspect-ratio:1;padding:0;border-radius:50%;
+  border:4px solid var(--ink);
+  display:flex;align-items:center;justify-content:center;
+  background:radial-gradient(circle,var(--mint) 0 35%,var(--mint-dark) 75%);
+  font-size:46cqh;line-height:1;
+  transform:translateY(125%);transform-origin:50% 100%;
+  transition:transform .14s ease-out;
+  touch-action:manipulation;
+}
+.coon.up{transform:translateY(0)}
+.coon.gold{
+  background:radial-gradient(circle,var(--gold-light) 0 35%,var(--gold) 80%);
+  box-shadow:0 0 16px var(--gold-glow);
+}
+/* Imagen del mapache */
+.coon img{
+  width:88%;height:88%;object-fit:contain;
+  pointer-events:none;user-select:none;-webkit-user-drag:none;
+}
+.coon.gold img{filter:sepia(.7) saturate(2.5) brightness(1.1) drop-shadow(0 0 4px var(--gold-glow))}
+.coon.squash{animation:aplastar .38s ease-out forwards;pointer-events:none}
+.coon.squash::after{
+  content:"💫";position:absolute;top:-70%;font-size:70%;
+  animation:giro .38s linear;
+}
+@keyframes aplastar{
+  0%  {transform:translateY(0) scale(1,1)}
+  35% {transform:translateY(8%) scale(1.45,.22);filter:brightness(1.3)}
+  100%{transform:translateY(12%) scale(1.5,.18)}
+}
+@keyframes giro{to{transform:rotate(360deg)}}
+
+/* Texto "+N" que sube al golpear */
+.plus{
+  color:#fff;z-index:6;
+  text-shadow:0 2px 0 var(--ink),0 0 8px var(--ink);
+  animation:sube .6s ease-out forwards;
+}
+@keyframes sube{to{transform:translateY(-40px);opacity:0}}
+
+/* Martillo que sigue al puntero */
+.hammer{
+  position:absolute;left:0;top:0;z-index:8;display:none;pointer-events:none;
+  font-size:calc(20cqh * var(--k,1));line-height:1;
+  transform-origin:90% 90%;
+  transform:translate(-80%,-80%) rotate(20deg);
+  transition:transform .05s;
+}
+.arena.playing .hammer.visible{display:block}
+.hammer.swing{transform:translate(-80%,-80%) rotate(-40deg)}
+
+/* Aspecto de cada nivel (sirve para el martillo del juego y el de la tienda) */
+.hammer,
+.shop-hammer{filter:var(--fx,none)}
+.hammer[data-nivel="1"],.shop-hammer[data-nivel="1"]{--fx:drop-shadow(0 3px 0 rgba(0,0,0,.27))}
+.hammer[data-nivel="2"],.shop-hammer[data-nivel="2"]{--fx:grayscale(1) drop-shadow(0 3px 0 rgba(0,0,0,.27))}
+.hammer[data-nivel="3"],.shop-hammer[data-nivel="3"]{--fx:grayscale(1) brightness(1.5) drop-shadow(0 0 6px #6FA8FF)}
+.hammer[data-nivel="4"],.shop-hammer[data-nivel="4"]{--fx:sepia(1) saturate(4) drop-shadow(0 0 8px var(--gold-glow))}
+.hammer[data-nivel="5"],.shop-hammer[data-nivel="5"]{--fx:hue-rotate(160deg) saturate(3) drop-shadow(0 0 12px #4DE1FF)}
+
+/* Panel de inicio / fin de partida */
+.overlay{
+  position:absolute;inset:0;width:100%;height:100%;z-index:10;overflow:hidden;
+  background-color:rgba(30,27,75,.88);color:#fff;
+  backdrop-filter:blur(3px);
+}
+.btn-start{
+  --bs-btn-color:var(--ink); --bs-btn-bg:var(--mint); --bs-btn-border-color:var(--ink);
+  --bs-btn-border-width:3px;
+  --bs-btn-hover-color:var(--ink); --bs-btn-hover-bg:#8BF5CB; --bs-btn-hover-border-color:var(--ink);
+  --bs-btn-active-color:var(--ink); --bs-btn-active-bg:#8BF5CB; --bs-btn-active-border-color:var(--ink);
+  --bs-btn-focus-shadow-rgb:93,240,184;
+}
+@media (max-width:575.98px){
+  .overlay{gap:.5rem!important;padding:.75rem!important}
+  .overlay .emoji{font-size:2rem!important}
+  .overlay h2{font-size:1.25rem;margin:0}
+  .overlay p{font-size:.85rem}
+  .overlay .btn{padding:.4rem 1.25rem;font-size:1rem}
+}
+
+/* Tienda de martillos */
+.shop{background-color:var(--white);border:3px solid var(--ink);border-radius:1.25rem}
+.shop-hammer{font-size:2.2rem;line-height:1}
+.chip-coin{background-color:#FFF3C4}
+
+/* Invitación al registro al terminar */
 .invite{background-color:var(--ink)}
 .result{background-color:var(--peri);color:var(--ink)}
+
+@media (prefers-reduced-motion:reduce){
+  .coon,.hammer{transition:none}
+  .arena.shake{animation:none}
+}
 
 /* Memoria */
 .mem-pildora{background-color:var(--white);color:var(--ink)}
